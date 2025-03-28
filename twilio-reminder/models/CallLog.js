@@ -8,7 +8,7 @@ const CallLogSchema = new mongoose.Schema({
   to: { type: String },
   answeredBy: { type: String },
   recordingUrl: { type: String },
-  transcription: { type: String },
+  liveCapturedTranscript: [{ type: String }],
   timestamp: { type: Date, default: Date.now },
 });
 

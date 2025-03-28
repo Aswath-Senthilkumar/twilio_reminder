@@ -1,18 +1,40 @@
 require("dotenv").config(); // Load the environment variables from .env
 require("./db"); // MongoDB connection setup
 
+// Importing required modules and setting up the server.
 const express = require("express");
 const twilio = require("twilio");
 const CallLog = require("./models/CallLog");
+const http = require("http");
+const WebSocket = require("ws");
+const path = require("path");
+
+// Using Google Speech-to-Text API for transcribing real-time audio.
+const speech = require("@google-cloud/speech");
+
+// Google Cloud Speech-to-Text client for real-time transcription with 2 second debounce approach.
+const speechClient = new speech.SpeechClient();
+
+// Configuring the transcript request.
+const requestConfig = {
+  config: {
+    encoding: "MULAW",
+    sampleRateHertz: 8000,
+    languageCode: "en-US",
+  },
+  interimResults: true,
+};
 
 const app = express();
 const port = process.env.PORT || 8080;
 
+// Gathering environment variables for Twilio and ngrok.
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`;
 
+// body-parser middleware to parse incoming request bodies.
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -60,7 +82,7 @@ app.post("/api/call", async (req, res) => {
  * End-point /voice of method ALL
  * This endpoint is the TwiML instruction for the call that was initiated.
  * It returns the appropriate TwiML instruction based on whether the call was answered by a human or a machine.
- * Calls answered by a human will be recorded and transcribed.
+ * Calls answered by a human will be streamed to Google speech to Text API for live transcription.
  * If the call is answered by a machine, the voicemail message will be played instead.
  */
 app.all("/voice", (req, res) => {
@@ -68,15 +90,16 @@ app.all("/voice", (req, res) => {
   const twiml = new VoiceResponse();
   const answeredBy = req.body.AnsweredBy;
 
-  // If human picks up the phone, greet and remind about medications.
+  // If human picks up the phone, start streaming audio through /media greet and remind about medications.
   if (answeredBy === "human") {
+    twiml
+      .start()
+      .stream({ url: `wss://${BASE_URL.replace(/^https:\/\//, "")}/media` });
     twiml.say(
       "Hello, this is a reminder from your healthcare provider to confirm your medications for the day. Please confirm if you have taken your Aspirin, Cardivol, and Metformin today."
     );
 
     twiml.record({
-      transcribe: true,
-      transcribeCallback: `${BASE_URL}/transcription`,
       action: `${BASE_URL}/recording-complete`,
       maxLength: 10,
       playBeep: true,
@@ -95,8 +118,6 @@ app.all("/voice", (req, res) => {
       "Hello, this is a reminder from your healthcare provider to confirm your medications for the day. Please confirm if you have taken your Aspirin, Cardivol, and Metformin today."
     );
     twiml.record({
-      transcribe: true,
-      transcribeCallback: `${BASE_URL}/transcription`,
       action: `${BASE_URL}/recording-complete`,
       maxLength: 10,
       playBeep: true,
@@ -111,42 +132,30 @@ app.all("/voice", (req, res) => {
  * End-point /recording-complete of method POST
  * This endpoint is called right after the recording process is compelted.
  */
-app.post("/recording-complete", (req, res) => {
+app.post("/recording-complete", async (req, res) => {
   const VoiceResponse = twilio.twiml.VoiceResponse;
   const twiml = new VoiceResponse();
+  const recordingUrl = req.body.RecordingUrl || "";
+  const callSid = req.body.CallSid || "Unknown";
+
+  if (recordingUrl && callSid) {
+    console.log(`Recording URL of the call: ${recordingUrl}`);
+    try {
+      await CallLog.findOneAndUpdate(
+        { callSid },
+        { recordingUrl },
+        { new: true, upsert: true }
+      );
+      console.log("Recording URL has been updated to the MongoDB database.");
+    } catch (err) {
+      console.error("Error updating call log with recording URL:", err);
+    }
+  }
+
   twiml.say("Your response has been recorded. Thank you. Goodbye.");
   twiml.hangup();
   res.type("text/xml");
   res.send(twiml.toString());
-});
-
-/**
- * End-point /transcription of method POST
- * This endpoint gets the transcribed text of the call recording.
- * And displays the transcription text and recording URL in the console.
- * Looks for existing and matching callSid in DB and updates the MongoDB database with the transcription text and recording url, if not then callSid is established with transcription and recordingUrl.
- */
-app.post("/transcription", async (req, res) => {
-  const transcriptionText = req.body.TranscriptionText;
-  const callSid = req.body.CallSid;
-  const recordingUrl = req.body.RecordingUrl || "";
-  if (transcriptionText && callSid) {
-    console.log(`Call Transcript: ${transcriptionText}`);
-    console.log(`Recording URL: ${recordingUrl}`);
-    try {
-      await CallLog.findOneAndUpdate(
-        { callSid },
-        { transcription: transcriptionText, recordingUrl },
-        { new: true, upsert: true }
-      );
-      console.log("Transcription and RecordingUrl updated in DB");
-    } catch (err) {
-      console.error("Error updating call log:", err);
-    }
-  } else {
-    console.error("Couldn't get the transcription text.");
-  }
-  res.sendStatus(200);
 });
 
 /**
@@ -186,11 +195,14 @@ app.post("/status", async (req, res) => {
         },
         { new: true, upsert: true }
       );
-      console.log("CallSid, CallStatus, From, To, AnsweredBy populated to DB");
+      console.log("Call SID, Call Status, From, To, Answered By updated to DB");
     } catch (err) {
       console.error("Error upserting final call log:", err);
     }
-    if (CallStatus === "completed" && !AnsweredBy) {
+    if (
+      (CallStatus === "completed" && !AnsweredBy) ||
+      finalStatus === "SMS sent"
+    ) {
       const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
       try {
         await client.messages.create({
@@ -236,7 +248,103 @@ app.get("/call-logs", async (req, res) => {
   }
 });
 
+// Creating HTTP & WebSocket server for /media
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server, path: "/media" });
+
+/**
+ * Creating a WebSocket connection =>
+ * Creating a recognize stream by passing the transcription request configuration to the Google API.
+ * If there is a valid transcript, it will be updated to the buffer and reset the debounce timer.
+ * The whole chunk of transcript is finally updated to the MongoDB database.
+ * Handling all the WebSocket events: connected (when a new call connects), start (when the media stream starts), media (when the audio stream is received), and stop (when the call ends).
+ */
+wss.on("connection", function connection(ws) {
+  console.log("Connected to /media for live transcription.");
+
+  let recognizeStream = null;
+  let callSid = null;
+
+  let transcriptBuffer = "";
+  let debounceTimer = null;
+
+  ws.on("message", function incoming(message) {
+    const msg = JSON.parse(message);
+    switch (msg.event) {
+      case "connected":
+        console.log("Call has been connected.");
+        break;
+
+      case "start":
+        callSid = msg.start.callSid;
+        console.log(`Passing audio stream for Stream SID: ${msg.streamSid}`);
+
+        recognizeStream = speechClient
+          .streamingRecognize(requestConfig)
+          .on("error", console.error)
+          .on("data", (data) => {
+            if (
+              data.results[0] &&
+              data.results[0].alternatives[0] &&
+              data.results[0].alternatives[0].transcript
+            ) {
+              transcriptBuffer = data.results[0].alternatives[0].transcript;
+
+              if (debounceTimer) clearTimeout(debounceTimer);
+
+              debounceTimer = setTimeout(async () => {
+                console.log(`Patient: "${transcriptBuffer}"`);
+                try {
+                  await CallLog.findOneAndUpdate(
+                    { callSid },
+                    { $push: { liveCapturedTranscript: transcriptBuffer } },
+                    { new: true, upsert: true }
+                  );
+                  console.log(
+                    `Live captured transcript has been updated to the MongoDB database.`
+                  );
+                } catch (err) {
+                  console.error("Error updating liveCapturedTranscript:", err);
+                }
+
+                transcriptBuffer = "";
+                debounceTimer = null;
+              }, 2000);
+              wss.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                  client.send(
+                    JSON.stringify({
+                      event: "interim-transcription",
+                      text: data.results[0].alternatives[0].transcript,
+                    })
+                  );
+                }
+              });
+            }
+          });
+        break;
+
+      case "media":
+        if (recognizeStream) {
+          recognizeStream.write(msg.media.payload);
+        }
+        break;
+
+      case "stop":
+        console.log("Call has ended.");
+        if (recognizeStream) {
+          recognizeStream.destroy();
+        }
+        break;
+
+      default:
+        console.log("Unhandled event:", msg.event);
+        break;
+    }
+  });
+});
+
 // Start the server
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
