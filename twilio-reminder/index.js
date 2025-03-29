@@ -66,6 +66,9 @@ app.post("/api/call", async (req, res) => {
       statusCallback: `${BASE_URL}/status`,
       statusCallbackEvent: ["initiated", "ringing", "in-progress", "completed"],
       statusCallbackMethod: "POST",
+      record: "true",
+      recordingStatusCallback: `${BASE_URL}/recording-complete`,
+      recordingStatusCallbackMethod: "POST",
     });
     console.log(`Call initiated with SID: ${call.sid}`);
     return res.json({
@@ -90,7 +93,6 @@ app.all("/voice", (req, res) => {
   const twiml = new VoiceResponse();
   const answeredBy = req.body.AnsweredBy;
 
-  // If human picks up the phone, start streaming audio through /media greet and remind about medications.
   if (answeredBy === "human") {
     twiml
       .start()
@@ -98,15 +100,10 @@ app.all("/voice", (req, res) => {
     twiml.say(
       "Hello, this is a reminder from your healthcare provider to confirm your medications for the day. Please confirm if you have taken your Aspirin, Cardivol, and Metformin today."
     );
-
-    twiml.record({
-      action: `${BASE_URL}/recording-complete`,
-      maxLength: 10,
-      playBeep: true,
-    });
-  }
-  // If answered by machine, proceed to voicemail message.
-  else if (answeredBy && answeredBy.startsWith("machine")) {
+    twiml.pause({ length: 10 });
+    twiml.say("Your response has been recorded. Thank you. Goodbye.");
+    twiml.hangup();
+  } else if (answeredBy && answeredBy.startsWith("machine")) {
     twiml.say(
       "We called to check on your medication but couldn't reach you. Please call us back or take your medications if you haven't done so. Thank you and goodbye."
     );
@@ -117,11 +114,9 @@ app.all("/voice", (req, res) => {
     twiml.say(
       "Hello, this is a reminder from your healthcare provider to confirm your medications for the day. Please confirm if you have taken your Aspirin, Cardivol, and Metformin today."
     );
-    twiml.record({
-      action: `${BASE_URL}/recording-complete`,
-      maxLength: 10,
-      playBeep: true,
-    });
+    twiml.pause({ length: 10 });
+    twiml.say("Your response has been recorded. Thank you. Goodbye.");
+    twiml.hangup();
   }
 
   res.type("text/xml");
@@ -130,7 +125,7 @@ app.all("/voice", (req, res) => {
 
 /**
  * End-point /recording-complete of method POST
- * This endpoint is called right after the recording process is compelted.
+ * This endpoint is called right after the recording process is completed.
  */
 app.post("/recording-complete", async (req, res) => {
   const VoiceResponse = twilio.twiml.VoiceResponse;
@@ -151,9 +146,6 @@ app.post("/recording-complete", async (req, res) => {
       console.error("Error updating call log with recording URL:", err);
     }
   }
-
-  twiml.say("Your response has been recorded. Thank you. Goodbye.");
-  twiml.hangup();
   res.type("text/xml");
   res.send(twiml.toString());
 });
@@ -195,7 +187,9 @@ app.post("/status", async (req, res) => {
         },
         { new: true, upsert: true }
       );
-      console.log("Call SID, Call Status, From, To, Answered By updated to DB");
+      console.log(
+        "Call SID, Call Status, From, To, Answered By has been updated to DB"
+      );
     } catch (err) {
       console.error("Error upserting final call log:", err);
     }
@@ -229,6 +223,8 @@ app.all("/incoming", (req, res) => {
   twiml.say(
     "Hello, this is a reminder from your healthcare provider to confirm your medications for the day. Please confirm if you have taken your Aspirin, Cardivol, and Metformin today."
   );
+  twiml.pause({ length: 10 });
+  twiml.say("Your response has been recorded. Thank you. Goodbye.");
   twiml.hangup();
   res.type("text/xml");
   res.send(twiml.toString());
@@ -236,11 +232,12 @@ app.all("/incoming", (req, res) => {
 
 /**
  * End-point /call-logs of method GET
- * This endpoint retrieves all the call logs from MongoDB.
+ * This endpoint retrieves all the call logs from MongoDB and displays in console.
  */
 app.get("/call-logs", async (req, res) => {
   try {
     const logs = await CallLog.find({}).sort({ timestamp: -1 });
+    console.log("Retrieved call logs:", JSON.stringify(logs, null, 2)); // Logs the calls in latest call first order.
     res.json(logs);
   } catch (err) {
     console.error("Error retrieving call logs:", err);
