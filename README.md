@@ -185,7 +185,7 @@ Open a new terminal tab, optionally you can use Postman to call APIs:
 
 **Send a POST to /api/call**: This API requires a content - "to" (to phone number). The number you are trying to place a call needs to be verified in Twilio before you do so in order to connect. and make sure you have the current ngrok Forwarding URL in your API calls, `.env` file and also your Twilio Console Configuration.
 
-now run the command / call the API:
+now run the command / call the API: (use appropriate command for windows for calling APIs if you're using windows)
 
 ```bash
 curl -X POST -H "Content-Type: application/json" -d '{"to": "+1<your-verified-caller-id>"}' https://your-ngrok-domain.ngrok-free.app/api/call
@@ -201,7 +201,7 @@ After performing a few calls, you can now use either Postman or the same termina
 
 **Send a GET to /call-logs**: This API will fetch all the Call Logs from the MongoDB database and log them in the console.
 
-command:
+command: (use appropriate command for windows for calling APIs if you're using windows)
 
 ```bash
 curl -X GET https://your-ngrok-domain.ngrok-free.app/call-logs
