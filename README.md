@@ -172,12 +172,12 @@ We would need 3 terminal tabs => one to run ngrok - which we have already done, 
 **Start the Server**: Open a new terminal tab and run the command
 
 ```bash
-    node index.js
+node index.js
 ```
 
 it should start the server and log in which port the server is listening to and also notify on successful connection to MongoDB.
 
-head to [https://localhost:8080/] and you should see “Twilio Reminder System is running.” if the server has successfully started.
+head to https://localhost:8080/ and you should see “Twilio Reminder System is running.” if the server has successfully started.
 
 ## 8. Trigger a Call
 
