@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const CallLogSchema = new mongoose.Schema({
   callSid: { type: String, required: true },
   callStatus: { type: String },
+  callType: { type: String },
   from: { type: String },
   to: { type: String },
   answeredBy: { type: String },

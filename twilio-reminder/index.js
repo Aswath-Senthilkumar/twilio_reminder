@@ -100,7 +100,7 @@ app.all("/voice", (req, res) => {
     twiml.say(
       "Hello, this is a reminder from your healthcare provider to confirm your medications for the day. Please confirm if you have taken your Aspirin, Cardivol, and Metformin today."
     );
-    twiml.pause({ length: 10 });
+    twiml.pause({ length: 7 });
     twiml.say("Your response has been recorded. Thank you. Goodbye.");
     twiml.hangup();
   } else if (answeredBy && answeredBy.startsWith("machine")) {
@@ -111,10 +111,13 @@ app.all("/voice", (req, res) => {
   }
   // Assume that the user picked up the call but did not speak.
   else {
+    twiml
+      .start()
+      .stream({ url: `wss://${BASE_URL.replace(/^https:\/\//, "")}/media` });
     twiml.say(
       "Hello, this is a reminder from your healthcare provider to confirm your medications for the day. Please confirm if you have taken your Aspirin, Cardivol, and Metformin today."
     );
-    twiml.pause({ length: 10 });
+    twiml.pause({ length: 7 });
     twiml.say("Your response has been recorded. Thank you. Goodbye.");
     twiml.hangup();
   }
@@ -158,7 +161,7 @@ app.post("/recording-complete", async (req, res) => {
  * Looks for existing and matching callSid in DB and updates the MongoDB database with the final call status, from, to and answered by, If not then callSid is established along with other details.
  */
 app.post("/status", async (req, res) => {
-  const { CallSid, CallStatus, From, To, AnsweredBy } = req.body;
+  const { CallSid, CallStatus, From, To, AnsweredBy, CallType } = req.body;
 
   if (
     CallStatus === "completed" ||
@@ -184,11 +187,12 @@ app.post("/status", async (req, res) => {
           from: From,
           to: To,
           answeredBy: AnsweredBy || "",
+          callType: CallType || "Outbound",
         },
         { new: true, upsert: true }
       );
       console.log(
-        "Call SID, Call Status, From, To, Answered By has been updated to DB"
+        "Call SID, Call Status, From, To, Answered By and Call Type has been updated to DB"
       );
     } catch (err) {
       console.error("Error upserting final call log:", err);
@@ -217,13 +221,32 @@ app.post("/status", async (req, res) => {
  * End-point /incoming of method ALL
  * This endpoint is for handling incoming calls from patients.
  */
-app.all("/incoming", (req, res) => {
+app.all("/incoming", async (req, res) => {
   const VoiceResponse = twilio.twiml.VoiceResponse;
   const twiml = new VoiceResponse();
+  const callType = "Inbound";
+  const callSid = req.body.CallSid || "Unknown";
+  const from = req.body.From || "Unknown";
+  const to = req.body.To || "Unknown";
+
+  try {
+    await CallLog.findOneAndUpdate(
+      { callSid },
+      { callType, from, to },
+      { new: true, upsert: true }
+    );
+    console.log("Incoming call log has been updated to the MongoDB database.");
+  } catch (err) {
+    console.error("Error upserting incoming call log:", err);
+  }
+
+  twiml
+    .start()
+    .stream({ url: `wss://${BASE_URL.replace(/^https:\/\//, "")}/media` });
   twiml.say(
     "Hello, this is a reminder from your healthcare provider to confirm your medications for the day. Please confirm if you have taken your Aspirin, Cardivol, and Metformin today."
   );
-  twiml.pause({ length: 10 });
+  twiml.pause({ length: 7 });
   twiml.say("Your response has been recorded. Thank you. Goodbye.");
   twiml.hangup();
   res.type("text/xml");
