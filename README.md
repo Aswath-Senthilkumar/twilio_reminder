@@ -221,17 +221,15 @@ You would see -
    `Connected to /media for live transcription.`
    `Call has been connected.`
    `Passing audio stream for Stream SID: xxxxxxxxxxxxxxxxxx`
-
-upon the patient's response, their live speech will be captured and displayed -
-`Patient: "Hello, xyz..."`
-
-and once their response has been recorded, the system will hang-up on the call and log the call details -
-`Live captured transcript has been updated to the MongoDB database.`
-`Call has ended.`
-`Call SID: CAxxxxxxxxxxxxxxx, Status: answered`
-`Call SID, Call Status, From, To, Answered By and Call Type has been updated to DB`
-`Recording URL of the call: https://api.twilio.com/xyz...`
-`Recording URL has been updated to the MongoDB database.`
+   upon the patient's response, their live speech will be captured and displayed -
+   `Patient: "Hello, xyz..."`
+   and once their response has been recorded, the system will hang-up on the call and log the call details -
+   `Live captured transcript has been updated to the MongoDB database.`
+   `Call has ended.`
+   `Call SID: CAxxxxxxxxxxxxxxx, Status: answered`
+   `Call SID, Call Status, From, To, Answered By and Call Type has been updated to DB`
+   `Recording URL of the call: https://api.twilio.com/xyz...`
+   `Recording URL has been updated to the MongoDB database.`
 
 2. if the call goes to the voice-mail box, it would play the voice-mail text and then log -
    `Call SID: CAxxxxxxxxxxxxxxx, Status: voicemail sent`
