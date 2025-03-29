@@ -21,7 +21,7 @@ A Reminder System using twilio to call or text patients to remind them about the
 
 The Twilio Reminder System allows you to:
 
-- Initiate outbound calls to patients and detect whether a human or machine answers.
+- Initiate outbound calls / accept inbound calls to patients and detect whether a human or machine answers.
 - Play TTS prompts to remind the patients about their medications.
 - Capture **full call recordings** through Twilio.
 - Stream the call to **Google Cloud Speech-to-Text** for live transcription.
@@ -147,7 +147,7 @@ The Twilio Reminder System allows you to:
 ## 6. Configure TTS & STT
 
 1. **TTS**: Done using Twilio's in-built commands / tags, so no extra steps needed.
-2. **Google STT**: (I chose Google API )
+2. **Google STT**: (I chose Google API over Deepgram as Deepgram was paid and Google API was covered in trial credits)
    1. Go to [Google Cloud](https://cloud.google.com/).
    2. Sign in with you google account, click on get started for free, then you will have to add a Payments Profile and a Payment Method. You will not be charged for up to $300 over the next 90 days.
    3. Once you're done with that, head to the [Google Cloud Console](https://console.cloud.google.com/), make sure you have selected the same google account for which you setup a payment method for.
