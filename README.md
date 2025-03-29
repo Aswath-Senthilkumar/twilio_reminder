@@ -69,7 +69,7 @@ The Twilio Reminder System allows you to:
 
    We will now be gathering all the required keys / variables.
 
-   1. TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER come from your Twilio Console. (#4-configure-twilio)
+   1. TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER come from your Twilio Console.
    2. BASE_URL for your publicly accessible URL (ngrok).
    3. MONGODB_URI for Atlas.
    4. GOOGLE_APPLICATION_CREDENTIALS path to your JSON key for Google STT.
