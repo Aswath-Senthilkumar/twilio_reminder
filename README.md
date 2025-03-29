@@ -31,7 +31,7 @@ The Twilio Reminder System allows you to:
 
 ## 2. Prerequisites
 
-1. **Node.js** (latest version)
+1. **Node.js** (latest version) (visit )
 2. **npm**
 3. **MongoDB** (Atlas)
 4. **Twilio** account (trial - only handles calls attended by humans / paid - unlocks voicemail functionality)
@@ -83,7 +83,7 @@ The Twilio Reminder System allows you to:
 
    1. Visit [Twilio Login Page](https://login.twilio.com/u/signup) and Login with your credentials.
    2. If you are new to Twilio then create an account, you might need to verify your email and phone number to verify the Caller-Id in order to place calls to that number.
-   3. Twilio will provide you with a phone number.
+   3. Purchase or get a Twilio trial number.
    4. Once you login, head to the [Twilio Console](https://console.twilio.com/) and scroll to the bottom of the page, where you could find the Twilio Account SID, Twilio Auth Token and your Twilio Phone Number.
    5. Now copy and place them in your `.env` file:
 
@@ -147,18 +147,19 @@ The Twilio Reminder System allows you to:
 ## 6. Configure TTS & STT
 
 1. **TTS**: Done using Twilio's in-built commands / tags, so no extra steps needed.
-2. **Google STT**:
+2. **Google STT**: (I chose Google API )
    1. Go to [Google Cloud](https://cloud.google.com/).
    2. Sign in with you google account, click on get started for free, then you will have to add a Payments Profile and a Payment Method. You will not be charged for up to $300 over the next 90 days.
    3. Once you're done with that, head to the [Google Cloud Console](https://console.cloud.google.com/), make sure you have selected the same google account for which you setup a payment method for.
-   4. On the search bar at the top, search for "APIs & Services" and click on it.
-   5. You would find a button saying "+ Enable APIs and Services", click on that and search for "Cloud Speech-to-Text API" and click on the first one, or simply follow this link [Cloud Speech-to-Text API](https://console.cloud.google.com/apis/library/speech.googleapis.com), click on Enable, and then Manage.
-   6. You would enter the API/Service Details, here on the left panel, click on Credentials and then "+ Create Credentials" > "Service Account".
-   7. Name your Service Account, it would generate an Account ID, you could give the account a description as you want and click on create and continue. Optionally grant access to project and access for users to this account.
-   8. You will be redirected to the Credentials page where you would find the Service account you created. Click on it.
-   9. On the top-panel, click on the "Keys", and then "Add a key" > "Create new key" > "JSON and click on create.
-   10. Download and save the JSON file somewhere safe in your local as this file contains the private key and service account email used by your application to authenticate with Google.
-   11. Now copy it's actual/full path and save it in `.env` file:
+   4. Create / Select a project and open that.
+   5. On the search bar at the top, search for "APIs & Services" and click on it.
+   6. You would find a button saying "+ Enable APIs and Services", click on that and search for "Cloud Speech-to-Text API" and click on the first one, or simply follow this link [Cloud Speech-to-Text API](https://console.cloud.google.com/apis/library/speech.googleapis.com), click on Enable, and then Manage.
+   7. You would enter the API/Service Details, here on the left panel, click on Credentials and then "+ Create Credentials" > "Service Account".
+   8. Name your Service Account, it would generate an Account ID, you could give the account a description as you want and click on create and continue. Optionally grant access to project and access for users to this account.
+   9. You will be redirected to the Credentials page where you would find the Service account you created. Click on it.
+   10. On the top-panel, click on the "Keys", and then "Add a key" > "Create new key" > "JSON and click on create.
+   11. Download and save the JSON file somewhere safe in your local as this file contains the private key and service account email used by your application to authenticate with Google.
+   12. Now copy it's actual/full path and save it in `.env` file:
    ```bash
    GOOGLE_APPLICATION_CREDENTIALS = /full/path/to/your-service-account-key.json
    ```
@@ -166,12 +167,14 @@ The Twilio Reminder System allows you to:
 
 ## 7. Running the Platform
 
-We would need 3 terminal tabs => one to run ngrok - which we have already done, one for starting the server and monitoring logs and one for calling the APIs.
+We would need 3 terminal tabs => one to run ngrok - which we have already done, one for starting the server and monitoring logs and one for calling the APIs. Always when opening a new terminal, make sure to enter the project folder by running `cd twilio-reminder/`
 
 **Start the Server**: Open a new terminal tab and run the command
-`bash
+
+```bash
     node index.js
-    `
+```
+
 it should start the server and log in which port the server is listening to and also notify on successful connection to MongoDB.
 
     head to [https://localhost:8080/] and you should see “Twilio Reminder System is running.” if the server has successfully started.
@@ -185,9 +188,7 @@ Open a new terminal tab, optionally you can use Postman to call APIs:
 now run the command / call the API:
 
 ```bash
-curl -X POST -H "Content-Type: application/json" \
-  -d '{"to":"+1<your_verified_caller_id>"}' \
-  https://your-ngrok-domain.ngrok-free.app/api/call
+curl -X POST -H "Content-Type: application/json" -d '{"to": "+1<your-verified-caller-id>"}' https://your-ngrok-domain.ngrok-free.app/api/call
 ```
 
 You would see a json with a message and Call SID on a successful call saying "Call initiated successfully", now head to [step 10](#10-review-console-outputs--patient-interactions).
@@ -243,4 +244,4 @@ You would see -
 
 ## Conclusion
 
-You now have a complete Twilio Reminder System that makes outbound calls, records them, transcribes spoken responses via Google Speech-to-Text, and logs all data in MongoDB.
+You now have a complete Twilio Reminder System that makes outbound calls, records them, transcribes spoken responses via Google Speech-to-Text, and logs all data in MongoDB. You will need a paid Twilio account to perform all the above mentioned functionalities.
