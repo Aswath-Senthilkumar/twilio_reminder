@@ -14,6 +14,7 @@ A Reminder System using twilio to call or text patients to remind them about the
 8. [Trigger a Call](#8-trigger-a-call)
 9. [Call Log API](#9-call-log-api)
 10. [Review Console Outputs & Patient Interactions](#10-review-console-outputs--patient-interactions)
+11. [Running Tests](#11-running-tests)
 
 ---
 
@@ -241,6 +242,47 @@ You would see -
 3. if the call was unanswered and didn't go to voice-mail, an SMS will be sent and then log (this functionality has not been tested by myself as Twilio required a toll-free verification with legal company information, you could test this by performing a toll-free verification in twilio) -
    `Call SID: CAxxxxxxxxxxxxxxx, Status: SMS sent`
    `Call SID, Call Status, From, To, Answered By and Call Type has been updated to DB`
+
+## 11. Running Tests
+
+I have included a set of unit tests and integration tests to this project. Before running the test, make sure the server is running in another ternimal.
+
+Optionally add: (or edit the test code accordingly to contain a valid phone number)
+
+```bash
+MY_PHONE_NUMBER = "your-phone-number"
+```
+
+now, open a new terminal and run:
+
+```bash
+npm test
+```
+
+this would run both unit and integration tests, check the terminal console to see if the tests passed.
+
+1. **Unit Tests**: (files: environmentVariables.test.js and server.test.js)
+
+These tests check that your environment variables are set correctly and that the server code loads without crashing. You should see all tests passing if your .env is properly configured.
+
+2. **Integration Tests**: (files: call.test.js, calllogs.test.js and incoming.test.js)
+
+   - The `/api/call` endpoint is tested to ensure it returns a 400 error when the "to" field is missing and successfully initiates a call when provided a valid phone number (or returns an error message if there is an issue).
+   - The `/call-logs` endpoint should return an array of call logs.
+   - The `/incoming` endpoint should return valid TwiML instructions for handling inbound calls.
+
+## Additional Features
+
+- Errors that occur due to invalid twilio credentials or network issues during an outbound call will be logged to the database with the error message to track and fix later (Assuming that the server runs 24/7 and is not monitored by someone always, with this the error can be analyzed and fixed upon maintenance).
+
+- Timed hang-up of the call with a goodbye note - letting the user know that their response has been recorded and end the call.
+
+## Room for Improvement
+
+- **Latency Reduction**: Optimize API endpoints, refine real-time audio streaming, and consider caching or CDNs for static content to reduce overall latency and improve user experience during live transcription.
+- **Security & Compliance**: Improve security by adding stricter authentication, rate limiting, and encryption for data in transit and at rest. Also, ensure compliance with relevant data protection standards if handling sensitive patient data.
+- **User Interface & Dashboard**: Develop a front-end dashboard to display call logs, transcription data, and recording playback, providing an easier way for administrators to monitor and manage the system.
+- **Extended STT/TTS Capabilities**: Explore alternative STT/TTS services and fine-tune configurations to enhance transcription accuracy and voice quality.
 
 ## Conclusion
 

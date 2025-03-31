@@ -77,6 +77,17 @@ app.post("/api/call", async (req, res) => {
     });
   } catch (error) {
     console.error("Error initiating call:", error);
+    try {
+      await CallLog.create({
+        callSid: "unknown",
+        callStatus: "error",
+        errorMsg: error.message,
+        timestamp: new Date(),
+      });
+      console.log("Error has been logged to DB.");
+    } catch (dbError) {
+      console.error("Failed to log error to DB:", dbError);
+    }
     return res.status(500).json({ error: "Failed to initiate call." });
   }
 });
@@ -365,6 +376,8 @@ wss.on("connection", function connection(ws) {
 });
 
 // Start the server
-server.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+if (require.main === module) {
+  server.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}

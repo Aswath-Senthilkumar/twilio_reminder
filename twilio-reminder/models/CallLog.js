@@ -11,6 +11,7 @@ const CallLogSchema = new mongoose.Schema({
   recordingUrl: { type: String },
   liveCapturedTranscript: [{ type: String }],
   timestamp: { type: Date, default: Date.now },
+  errorMsg: { type: String },
 });
 
 module.exports = mongoose.model("CallLog", CallLogSchema);
