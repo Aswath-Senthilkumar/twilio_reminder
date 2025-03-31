@@ -247,7 +247,7 @@ You would see -
 
 I have included a set of unit tests and integration tests to this project. Before running the test, make sure the server is running in another ternimal.
 
-Optionally add: (or edit the test code accordingly to contain a valid phone number)
+Optionally add this in your `.env` file: (or edit the test code accordingly to contain a valid phone number)
 
 ```bash
 MY_PHONE_NUMBER = "your-phone-number"
@@ -263,7 +263,7 @@ this would run both unit and integration tests, check the terminal console to se
 
 1. **Unit Tests**: (files: environmentVariables.test.js and server.test.js)
 
-These tests check that your environment variables are set correctly and that the server code loads without crashing. You should see all tests passing if your .env is properly configured.
+   - These tests check that your environment variables are set correctly and that the server code loads without crashing. You should see all tests passing if your .env is properly configured.
 
 2. **Integration Tests**: (files: call.test.js, calllogs.test.js and incoming.test.js)
 
