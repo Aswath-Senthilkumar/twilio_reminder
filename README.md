@@ -283,7 +283,3 @@ this would run both unit and integration tests, check the terminal console to se
 - **Security & Compliance**: Improve security by adding stricter authentication, rate limiting, and encryption for data in transit and at rest. Also, ensure compliance with relevant data protection standards if handling sensitive patient data.
 - **User Interface & Dashboard**: Develop a front-end dashboard to display call logs, transcription data, and recording playback, providing an easier way for administrators to monitor and manage the system.
 - **Extended STT/TTS Capabilities**: Explore alternative STT/TTS services and fine-tune configurations to enhance transcription accuracy and voice quality.
-
-## Conclusion
-
-You now have a complete Twilio Reminder System that makes outbound calls, records them, transcribes spoken responses via Google Speech-to-Text, and logs all data in MongoDB. You will need a paid Twilio account to perform all the above mentioned functionalities.
